@@ -1,0 +1,174 @@
+apiVersion: v1
+kind: Template
+metadata:
+  creationTimestamp: null
+  name: Example REST application with Prometheus metrics
+parameters:
+- description: The application name. 
+  name: APP_NAME
+  required: true
+  value: restservice
+- description: Git source URI for application
+  displayName: Git Repository URL
+  name: SOURCE_REPOSITORY_URL
+  required: true
+  value: https://github.com/jnordell/springboot-monitoring-example.git
+- description: Git branch/tag reference
+  displayName: Git Reference
+  name: SOURCE_REPOSITORY_REF
+  value: master
+- description: GitHub trigger secret
+  displayName: Github Webhook Secret
+  from: '[a-zA-Z0-9]{8}'
+  generate: expression
+  name: GITHUB_WEBHOOK_SECRET
+  required: true
+- description: Generic build trigger secret
+  displayName: Generic Webhook Secret
+  from: '[a-zA-Z0-9]{8}'
+  generate: expression
+  name: GENERIC_WEBHOOK_SECRET
+  required: true
+objects:
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    annotations:
+    labels:
+      app: ${APP_NAME}
+    name: ${APP_NAME}
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    labels:
+      app: ${APP_NAME}
+    name: ${APP_NAME}
+  spec:
+    nodeSelector: null
+    output:
+      to:
+        kind: ImageStreamTag
+        name: ${APP_NAME}:v1.0
+    postCommit: {}
+    resources: {}
+    runPolicy: Serial
+    source:
+      git:
+        ref: ${SOURCE_REPOSITORY_REF}
+        uri: ${SOURCE_REPOSITORY_URL}
+      type: Git
+    strategy:
+      sourceStrategy:
+        from:
+          kind: ImageStreamTag
+          name: redhat-openjdk18-openshift:1.2
+          namespace: openshift
+      type: Source
+    triggers:
+    - imageChange:
+      type: ImageChange
+    - type: ConfigChange
+    - generic:
+        secret: ${GENERIC_WEBHOOK_SECRET}
+      type: Generic
+    - github:
+        secret: ${GITHUB_WEBHOOK_SECRET}
+      type: GitHub   
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+    labels:
+      app: ${APP_NAME}
+    name: ${APP_NAME}
+  spec:
+    replicas: 3
+    selector:
+      app: ${APP_NAME}
+      deploymentconfig: ${APP_NAME}
+    strategy:
+      activeDeadlineSeconds: 21600
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        annotations:
+          openshift.io/generated-by: OpenShiftNewApp
+          prometheus.io/path: /metrics
+          prometheus.io/port: "8080"
+          prometheus.io/scrape: "true"
+        labels:
+          app: ${APP_NAME}
+          deploymentconfig: ${APP_NAME}
+      spec:
+        containers:
+        - image: ${APP_NAME}
+          imagePullPolicy: IfNotPresent
+          name: ${APP_NAME}
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources: {}
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+    test: false
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - ${APP_NAME}
+        from:
+          kind: ImageStreamTag
+          name: ${APP_NAME}:v1.0
+      type: ImageChange
+  status:
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/scheme: http
+      prometheus.io/port: "8080"
+#      prometheus.io/path: /metrics
+    labels:
+      app: ${APP_NAME}
+    name: ${APP_NAME}
+  spec:
+    ports:
+    - name: web
+      port: 80
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: ${APP_NAME}
+- apiVersion: v1
+  kind: Route
+  metadata:
+    annotations:
+    labels:
+      app: ${APP_NAME}
+    name: ${APP_NAME}
+  spec:
+    port:
+      targetPort: web
+    to:
+      kind: Service
+      name: ${APP_NAME}
+  status:
