@@ -57,13 +57,15 @@ public class Metrics {
   @Path("/hello-test")
   @Produces(MediaType.TEXT_PLAIN)
   public String sayHelloTest(@RequestParam(defaultValue="") String name) {
-    if (name == "b") {
+ /*   if (name == "b") {
     promRequestsFailedTotal.inc();
     return "failed world";
     } else {
     promRequestsTotal.inc();
     return "hello, world";
     }
+  */
+  return name;
   }
 
   @GET()
