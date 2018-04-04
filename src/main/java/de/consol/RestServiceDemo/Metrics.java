@@ -56,7 +56,7 @@ public class Metrics {
   @GET()
   @Path("/hello-test")
   @Produces(MediaType.TEXT_PLAIN)
-  public String sayHelloTest(@RequestParam(defaultValue="") String name) {
+  public String sayHelloTest(@RequestParam("name") String name) {
  /*   if (name == "b") {
     promRequestsFailedTotal.inc();
     return "failed world";
