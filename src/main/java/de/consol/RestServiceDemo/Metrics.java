@@ -23,6 +23,7 @@ import io.prometheus.client.hotspot.DefaultExports;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -41,17 +42,28 @@ public class Metrics {
 	private final Counter promRequestsTotal = Counter.build()
 					.name("requests_total")
 					.help("Total number of requests.")
-					.register();
+          .register();
+          
+  private final Counter promRequestsFailedTotal = Counter.build()
+					.name("requests_failed_total")
+					.help("Total number of failed requests.")
+          .register();
+
   {
     DefaultExports.initialize();
   }
 
   @GET()
-  @Path("/hello-world")
+  @Path("/hello-test")
   @Produces(MediaType.TEXT_PLAIN)
-  public String sayHello() {
+  public String sayHelloTest(@RequestParam(defaultValue="") String name) {
+    if (name == "b") {
+    promRequestsFailedTotal.inc();
+    return "failed world";
+    } else {
     promRequestsTotal.inc();
     return "hello, world";
+    }
   }
 
   @GET()
