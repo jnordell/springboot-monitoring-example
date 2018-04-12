@@ -59,6 +59,10 @@ public class Metrics {
   @Path("/hello-world")
   @Produces(MediaType.TEXT_PLAIN)
   public String sayHello(@QueryParam("name") String name) {
+    if (name == null) {
+      promRequestsTotal.inc();
+      return "hello, world";
+    }
     if (name.equals("olle")) {
       promRequestsFailedTotal.inc();
     return "failed world";
@@ -67,6 +71,12 @@ public class Metrics {
     return "hello, world";
     }
   }
+/*
+  public String sayHello2() {
+       promRequestsTotal.inc();
+       return "hello, world";
+  }
+*/
 
   @GET()
   @Path("/metrics")
