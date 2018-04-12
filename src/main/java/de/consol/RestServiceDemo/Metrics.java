@@ -56,7 +56,7 @@ public class Metrics {
   }
 
   @GET()
-  @Path("/hello-test")
+  @Path("/hello-world")
   @Produces(MediaType.TEXT_PLAIN)
   public String sayHello(@QueryParam("name") String name) {
     if (name.equals("olle")) {
