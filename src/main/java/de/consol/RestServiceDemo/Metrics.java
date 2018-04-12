@@ -22,12 +22,14 @@ import io.prometheus.client.exporter.common.TextFormat;
 import io.prometheus.client.hotspot.DefaultExports;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.StreamingOutput;
 import java.io.OutputStreamWriter;
@@ -56,16 +58,14 @@ public class Metrics {
   @GET()
   @Path("/hello-test")
   @Produces(MediaType.TEXT_PLAIN)
-  public String sayHelloTest(@RequestParam("name") String name) {
- /*   if (name == "b") {
-    promRequestsFailedTotal.inc();
+  public String sayHello(@QueryParam("name") String name) {
+    if (name.equals("olle")) {
+      promRequestsFailedTotal.inc();
     return "failed world";
     } else {
     promRequestsTotal.inc();
     return "hello, world";
     }
-  */
-  return name;
   }
 
   @GET()
